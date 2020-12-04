@@ -1,0 +1,32 @@
+name: Clang-Format
+description: Run `clang-format` on the diff
+
+inputs:
+  version:
+    description: "The version of clang-format to use, defaults to 10"
+    required: true
+    default: 10
+  reference:
+    description: "The ref the diff against which to check, defaults to HEAD^1"
+    required: true
+    # On pull requests, HEAD^1 will always be the merge base, so consider that diff for formatting.
+    default: HEAD^1
+
+runs:
+  using: composite
+
+  steps:
+  - name: Install clang-format
+    shell: bash
+    run: sudo apt-get install --no-install-recommends --yes clang-format-${{ inputs.version }}
+
+  - name: Run clang-format through the diff
+    shell: bash
+    run: |
+      set -euo pipefail
+
+      git diff -U0 --no-color ${{ inputs.reference }} | clang-format-diff-${{ inputs.version }} -p1 | tee ${HOME}/clang-diff
+      if [ "$( stat --printf='%s' ${HOME}/clang-diff )" -ne 0 ]; then
+        echo "##[error] Please apply the above diff to correct formatting"
+        exit 1
+      fi

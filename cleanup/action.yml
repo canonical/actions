@@ -1,0 +1,14 @@
+name: 'Cleanup'
+description: 'Cleans up the runner after build finishes'
+author: 'Saviq'
+branding:
+  icon: 'delete'
+  color: 'red'
+inputs:
+  paths:
+    description: 'Paths to clean up'
+    required: true
+runs:
+  using: 'node12'
+  main: 'index.js'
+  post: 'cleanup.js'

@@ -1,0 +1,31 @@
+name: 'S3 Upload'
+description: 'Upload file to S3'
+author: 'Saviq'
+branding:
+  icon: 'upload-cloud'
+  color: 'green'
+inputs:
+  path:
+    description: 'Path to the file to upload'
+    required: true
+  bucket:
+    description: 'Bucket to upload to'
+    required: true
+  prefix:
+    description: 'Prefix to upload to'
+    required: false
+    default: ''
+  public:
+    description: 'Whether to make the file public (default: false)'
+    required: false
+    default: false
+  storage-class:
+    description: 'Which storage class to use (default: STANDARD_IA)'
+    required: false
+    default: 'STANDARD_IA'
+outputs:
+  url:
+    description: 'URL of the uploaded file'
+runs:
+  using: 'node12'
+  main: 'index.js'

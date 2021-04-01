@@ -1,0 +1,83 @@
+name: Build and publish Snap
+description: |
+  This action uses LXD to build the snap and optionally publish into `inputs.publish-channel`.
+
+inputs:
+  publish:
+    description: |
+      Whether to publish the snap on the store.
+  snapcraft-token:
+    description: |
+      The token obtained with `snapcraft export-login --acls package_access,package_push,package_release -`. Required to publish.
+  publish-channel:
+    description: |
+      The snap channel to publish to. Required to publish.
+  snapcraft-channel:
+    description: |
+      The channel to install Snapcraft from. Defaults to `stable`.
+    default: stable
+  tools-channel:
+    description: |
+      The channel to install review-tools from. Defaults to `stable`.
+    default: stable
+  review-opts:
+    description: |
+      Additional review options passed to `review-tools.snap-review`.
+  plugs-file:
+    description: |
+      The JSON `plugs` declaration file for review tools. Defaults to `snap/local/plugs.json`.
+    default: snap/local/plugs.json
+  slots-file:
+    description: |
+      The JSON `slots` declaration file for review tools. Defaults to `snap/local/slots.json`.
+    default: snap/local/slots.json
+
+runs:
+  using: composite
+  steps:
+  - shell: bash
+    run: |
+      if [ '${{ inputs.publish }}' == 'true' ]; then
+        [ -n '${{ inputs.snapcraft-token }}' ] || ( echo '::error::`inputs.snapcraft-token` unset' && exit 1 )
+        [ -n '${{ inputs.publish-channel }}' ] || ( echo '::error::`inputs.publish-channel` unset' && exit 1 )
+      fi
+
+  - shell: bash
+    run: |
+      sudo snap install lxd
+      sudo snap install snapcraft --classic --channel ${{ inputs.snapcraft-channel }}
+      sudo snap install review-tools --channel ${{ inputs.tools-channel }}
+
+  - env:
+      SNAPCRAFT_TOKEN: ${{ inputs.snapcraft-token }}
+    shell: bash
+    run: |
+      [ '${{ inputs.publish }}' == 'true' ] || exit 0
+      printenv SNAPCRAFT_TOKEN > snapcraft-token
+      /snap/bin/snapcraft login --with snapcraft-token
+      rm -f snapcraft-token
+
+  - shell: bash
+    run: |
+      sudo /snap/bin/lxd init --auto
+      sudo adduser ${USER} lxd
+
+  - env:
+      SNAPCRAFT_BUILD_INFO: 1
+    shell: bash
+    run: |
+      sg lxd -c '/snap/bin/snapcraft --use-lxd'
+
+  - env:
+      SNAP_ENFORCE_RESQUASHFS: 0
+    shell: bash
+    run: |
+      REVIEW_OPTS=()
+      [ -f '${{ inputs.plugs-file }}' ] && REVIEW_OPTS+=(--plugs '${{ inputs.plugs-file }}')
+      [ -f '${{ inputs.slots-file }}' ] && REVIEW_OPTS+=(--slots '${{ inputs.slots-file }}')
+      /snap/bin/review-tools.snap-review "${REVIEW_OPTS[@]}" ${{ inputs.review-opts }} *.snap
+
+  - shell: bash
+    run: |
+      [ '${{ inputs.publish }}' == 'true' ] || exit 0
+      snapcraft upload *.snap --release '${{ inputs.publish-channel }}'

@@ -1,0 +1,66 @@
+name: Check
+description: Create or update a check on the given repository
+
+inputs:
+  app_id:
+    description: The application ID
+    required: true
+  private_key:
+    description: The application private key
+    required: true
+  repo:
+    description: The repository to create/update the check on
+    required: true
+  sha:
+    description: The commit SHA to create/update the check on
+    required: true
+  name:
+    description: The name of the check
+    required: false
+  check_id:
+    description: The ID of the check to update
+    required: false
+  status:
+    description: The check status
+    required: false
+    default: completed
+  conclusion:
+    description: The check's conclusion
+    required: false
+  details_url:
+    description: The URL to link back
+    required: false
+  output:
+    description: The check details
+    required: false
+
+outputs:
+  check_id:
+    description: The ID of the created/updated check
+    value: ${{ steps.check.outputs.check_id }}
+
+runs:
+  using: composite
+
+  steps:
+  - name: Create an App token
+    id: app-token
+    uses: tibdex/github-app-token@v1
+    with:
+      app_id: ${{ inputs.app_id }}
+      private_key: ${{ inputs.private_key }}
+      repository: ${{ inputs.repo }}
+
+  - name: Create a check on public
+    id: check
+    uses: LouisBrunner/checks-action@v1.1.1
+    with:
+      token: ${{ steps.app-token.outputs.token }}
+      repo: ${{ inputs.repo }}
+      sha: ${{ inputs.sha }}
+      name: ${{ inputs.name }}
+      check_id: ${{ inputs.check_id }}
+      status: ${{ inputs.status }}
+      conclusion: ${{ inputs.conclusion }}
+      details_url: ${{ inputs.details_url }}
+      output: ${{ inputs.output }}

@@ -1,0 +1,40 @@
+name: Close a snap channel
+description: |
+  This action closes the snap channel provided.
+
+inputs:
+  name:
+    description: |
+      The name of the snap to close the channel for. Defaults to the repository name.
+  channel:
+    required: true
+    description: |
+      The snap channel to close.
+  snapcraft-token:
+    required: true
+    description: |
+      The token obtained with `snapcraft export-login --acls package_access,package_push,package_release -`.
+  snapcraft-channel:
+    required: true
+    description: |
+      The channel to install Snapcraft from. Defaults to `stable`.
+    default: stable
+
+runs:
+  using: composite
+  steps:
+  - shell: bash
+    run: |
+      sudo snap install snapcraft --classic --channel ${{ inputs.snapcraft-channel }}
+
+  - id: get-name
+    shell: bash
+    if: ${{ ! inputs.name }}
+    run: |
+      echo "::set-output name=name::${GITHUB_REPOSITORY#*/}"
+
+  - shell: bash
+    env:
+      SNAPCRAFT_STORE_CREDENTIALS: ${{ inputs.snapcraft-token }}
+    run: |
+      snapcraft close "${{ inputs.name || steps.get-name.outputs.name }}" "${{ inputs.snap-channel }}"

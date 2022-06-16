@@ -37,4 +37,4 @@ runs:
     env:
       SNAPCRAFT_STORE_CREDENTIALS: ${{ inputs.snapcraft-token }}
     run: |
-      snapcraft close "${{ inputs.name || steps.get-name.outputs.name }}" "${{ inputs.snap-channel }}"
+      snapcraft close "${{ inputs.name || steps.get-name.outputs.name }}" "${{ inputs.channel }}"

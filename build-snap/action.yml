@@ -48,15 +48,6 @@ runs:
       sudo snap install snapcraft --classic --channel ${{ inputs.snapcraft-channel }}
       sudo snap install review-tools --channel ${{ inputs.tools-channel }}
 
-  - env:
-      SNAPCRAFT_TOKEN: ${{ inputs.snapcraft-token }}
-    shell: bash
-    run: |
-      [ '${{ inputs.publish }}' == 'true' ] || exit 0
-      printenv SNAPCRAFT_TOKEN > snapcraft-token
-      /snap/bin/snapcraft login --with snapcraft-token
-      rm -f snapcraft-token
-
   - shell: bash
     run: |
       sudo /snap/bin/lxd init --auto
@@ -78,6 +69,8 @@ runs:
       /snap/bin/review-tools.snap-review "${REVIEW_OPTS[@]}" ${{ inputs.review-opts }} *.snap
 
   - shell: bash
+    env:
+      SNAPCRAFT_STORE_CREDENTIALS: ${{ inputs.snapcraft-token }}
     run: |
       [ '${{ inputs.publish }}' == 'true' ] || exit 0
       snapcraft upload *.snap --release '${{ inputs.publish-channel }}'

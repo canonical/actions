@@ -32,6 +32,16 @@ inputs:
       The JSON `slots` declaration file for review tools. Defaults to `snap/local/slots.json`.
     default: snap/local/slots.json
 
+outputs:
+  snap-path:
+    value: ${{ steps.build-snap.outputs.snap-path }}
+    description: |
+      Full path to the built snap.
+  snap-name:
+    value: ${{ steps.build-snap.outputs.snap-name }}
+    description: |
+      Filename of the built snap.
+
 runs:
   using: composite
   steps:
@@ -67,11 +77,15 @@ runs:
       sudo iptables -I DOCKER-USER -o lxdbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 
   - name: Build the snap
+    id: build-snap
     env:
       SNAPCRAFT_BUILD_INFO: 1
     shell: bash
     run: |
-      /snap/bin/snapcraft --use-lxd
+      /snap/bin/snapcraft --use-lxd | tee ${{ runner.temp }}/snap.log
+      SNAP_NAME="$( tail -n1 ${{ runner.temp }}/snap.log | awk '/Snapped/ { print $2 }' )"
+      echo "snap-path=$( readlink -f ${SNAP_NAME} )" >> $GITHUB_OUTPUT
+      echo "snap-name=${SNAP_NAME}" >> $GITHUB_OUTPUT
 
   - name: Verify the built snap
     env:

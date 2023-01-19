@@ -12,6 +12,10 @@ inputs:
   publish-channel:
     description: |
       The snap channel to publish to. Required to publish.
+  setup-lxd:
+    description: |
+      Set this to `false` if LXD is already set up.
+    default: true
   lxd-channel:
     description:
       The channel to install LXD from. If empty, the installed one will be used (or the default channel installed).
@@ -61,6 +65,7 @@ runs:
       sudo snap install review-tools --channel ${{ inputs.tools-channel }}
 
   - name: Set up LXD
+    if: ${{ inputs.setup-lxd }}
     uses: canonical/setup-lxd@v0.1.0
     with:
       channel: ${{ inputs.lxd-channel }}

@@ -66,13 +66,15 @@ runs:
       sudo iptables -I DOCKER-USER -i lxdbr0 -j ACCEPT
       sudo iptables -I DOCKER-USER -o lxdbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 
-  - env:
+  - name: Build the snap
+    env:
       SNAPCRAFT_BUILD_INFO: 1
     shell: bash
     run: |
       /snap/bin/snapcraft --use-lxd
 
-  - env:
+  - name: Verify the built snap
+    env:
       SNAP_ENFORCE_RESQUASHFS: 0
     shell: bash
     run: |
@@ -81,7 +83,8 @@ runs:
       [ -f '${{ inputs.slots-file }}' ] && REVIEW_OPTS+=(--slots '${{ inputs.slots-file }}')
       /snap/bin/review-tools.snap-review "${REVIEW_OPTS[@]}" ${{ inputs.review-opts }} *.snap
 
-  - shell: bash
+  - name: Publish the built snap, if requested
+    shell: bash
     env:
       SNAPCRAFT_STORE_CREDENTIALS: ${{ inputs.snapcraft-token }}
     run: |

@@ -12,6 +12,13 @@ inputs:
   publish-channel:
     description: |
       The snap channel to publish to. Required to publish.
+  setup-lxd:
+    description: |
+      Set this to `false` if LXD is already set up.
+    default: true
+  lxd-channel:
+    description:
+      The channel to install LXD from. If empty, the installed one will be used (or the default channel installed).
   snapcraft-channel:
     description: |
       The channel to install Snapcraft from. Defaults to `stable`.
@@ -32,6 +39,16 @@ inputs:
       The JSON `slots` declaration file for review tools. Defaults to `snap/local/slots.json`.
     default: snap/local/slots.json
 
+outputs:
+  snap-path:
+    value: ${{ steps.build-snap.outputs.snap-path }}
+    description: |
+      Full path to the built snap.
+  snap-name:
+    value: ${{ steps.build-snap.outputs.snap-name }}
+    description: |
+      Filename of the built snap.
+
 runs:
   using: composite
   steps:
@@ -44,35 +61,28 @@ runs:
 
   - shell: bash
     run: |
-      if snap info lxd | grep "installed"; then
-        sudo snap refresh lxd --channel=${{ inputs.channel }}
-      else
-        sudo snap install lxd --channel=${{ inputs.channel }}
-      fi
       sudo snap install snapcraft --classic --channel ${{ inputs.snapcraft-channel }}
       sudo snap install review-tools --channel ${{ inputs.tools-channel }}
 
-  - shell: bash
-    run: |
-      sudo /snap/bin/lxd waitready
-      sudo /snap/bin/lxd init --auto
-      sudo snap set lxd daemon.group=adm
-      sudo snap restart lxd
+  - name: Set up LXD
+    if: ${{ inputs.setup-lxd }}
+    uses: canonical/setup-lxd@v0.1.0
+    with:
+      channel: ${{ inputs.lxd-channel }}
 
-  - name: Configure firewall
-    shell: bash
-    run: |
-      set -x
-      sudo iptables -I DOCKER-USER -i lxdbr0 -j ACCEPT
-      sudo iptables -I DOCKER-USER -o lxdbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-
-  - env:
+  - name: Build the snap
+    id: build-snap
+    env:
       SNAPCRAFT_BUILD_INFO: 1
     shell: bash
     run: |
-      /snap/bin/snapcraft --use-lxd
+      /snap/bin/snapcraft --use-lxd | tee ${{ runner.temp }}/snap.log
+      SNAP_NAME="$( tail -n1 ${{ runner.temp }}/snap.log | awk '/Snapped/ { print $2 }' )"
+      echo "snap-path=$( readlink -f ${SNAP_NAME} )" >> $GITHUB_OUTPUT
+      echo "snap-name=${SNAP_NAME}" >> $GITHUB_OUTPUT
 
-  - env:
+  - name: Verify the built snap
+    env:
       SNAP_ENFORCE_RESQUASHFS: 0
     shell: bash
     run: |
@@ -81,7 +91,8 @@ runs:
       [ -f '${{ inputs.slots-file }}' ] && REVIEW_OPTS+=(--slots '${{ inputs.slots-file }}')
       /snap/bin/review-tools.snap-review "${REVIEW_OPTS[@]}" ${{ inputs.review-opts }} *.snap
 
-  - shell: bash
+  - name: Publish the built snap, if requested
+    shell: bash
     env:
       SNAPCRAFT_STORE_CREDENTIALS: ${{ inputs.snapcraft-token }}
     run: |

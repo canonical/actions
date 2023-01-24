@@ -69,7 +69,7 @@ runs:
       sudo snap install review-tools --channel ${{ inputs.tools-channel }}
 
   - name: Set up LXD
-    if: ${{ inputs.setup-lxd }}
+    if: inputs.setup-lxd == 'true'
     uses: canonical/setup-lxd@v0.1.0
     with:
       channel: ${{ inputs.lxd-channel }}
@@ -86,7 +86,7 @@ runs:
       echo "snap-name=${SNAP_NAME}" >> $GITHUB_OUTPUT
 
   - name: Verify the built snap
-    if: ${{ inputs.review }}
+    if: inputs.review == 'true'
     env:
       SNAP_ENFORCE_RESQUASHFS: 0
     shell: bash

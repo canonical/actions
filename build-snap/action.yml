@@ -12,17 +12,14 @@ inputs:
   publish-channel:
     description: |
       The snap channel to publish to. Required to publish.
-  setup-lxd:
-    description: |
-      Set this to `false` if LXD is already set up.
-    default: true
-  lxd-channel:
-    description:
-      The channel to install LXD from. If empty, the installed one will be used (or the default channel installed).
   snapcraft-channel:
     description: |
       The channel to install Snapcraft from. Defaults to `stable`.
     default: stable
+  architecture:
+    description: |
+      The architecture to build for, see https://github.com/marketplace/actions/snapcraft-multiarch-build#multiple-architectures-support
+    default: amd64
   tools-channel:
     description: |
       The channel to install review-tools from. Defaults to `stable`.
@@ -45,13 +42,9 @@ inputs:
 
 outputs:
   snap-path:
-    value: ${{ steps.build-snap.outputs.snap-path }}
+    value: ${{ steps.build-snap.outputs.snap }}
     description: |
       Full path to the built snap.
-  snap-name:
-    value: ${{ steps.build-snap.outputs.snap-name }}
-    description: |
-      Filename of the built snap.
 
 runs:
   using: composite
@@ -65,25 +58,14 @@ runs:
 
   - shell: bash
     run: |
-      sudo snap install snapcraft --classic --channel ${{ inputs.snapcraft-channel }}
       sudo snap install review-tools --channel ${{ inputs.tools-channel }}
-
-  - name: Set up LXD
-    if: inputs.setup-lxd == 'true'
-    uses: canonical/setup-lxd@v0.1.0
-    with:
-      channel: ${{ inputs.lxd-channel }}
 
   - name: Build the snap
     id: build-snap
-    env:
-      SNAPCRAFT_BUILD_INFO: 1
-    shell: bash
-    run: |
-      /snap/bin/snapcraft --use-lxd | tee ${{ runner.temp }}/snap.log
-      SNAP_NAME="$( tail -n1 ${{ runner.temp }}/snap.log | awk '/Snapped/ { print $2 }' )"
-      echo "snap-path=$( readlink -f ${SNAP_NAME} )" >> $GITHUB_OUTPUT
-      echo "snap-name=${SNAP_NAME}" >> $GITHUB_OUTPUT
+    uses: diddlesnaps/snapcraft-multiarch-action@v1
+    with:
+      snapcraft-channel: ${{ inputs.snapcraft-channel }}
+      architecture: ${{ inputs.architecture }}
 
   - name: Verify the built snap
     if: inputs.review == 'true'
@@ -94,12 +76,13 @@ runs:
       REVIEW_OPTS=()
       [ -f '${{ inputs.plugs-file }}' ] && REVIEW_OPTS+=(--plugs '${{ inputs.plugs-file }}')
       [ -f '${{ inputs.slots-file }}' ] && REVIEW_OPTS+=(--slots '${{ inputs.slots-file }}')
-      /snap/bin/review-tools.snap-review "${REVIEW_OPTS[@]}" ${{ inputs.review-opts }} *.snap
+      /snap/bin/review-tools.snap-review "${REVIEW_OPTS[@]}" ${{ inputs.review-opts }} ${{ steps.build-snap.outputs.snap }}
 
   - name: Publish the built snap, if requested
-    shell: bash
-    env:
-      SNAPCRAFT_STORE_CREDENTIALS: ${{ inputs.snapcraft-token }}
-    run: |
-      [ '${{ inputs.publish }}' == 'true' ] || exit 0
-      snapcraft upload *.snap --release '${{ inputs.publish-channel }}'
+    if: inputs.publish == 'true'
+    uses: diddlesnaps/snapcraft-multiarch-action@v1
+    with:
+      store-auth: ${{ inputs.snapcraft-token }}
+      snapcraft-channel: ${{ inputs.snapcraft-channel }}
+      architecture: ${{ inputs.architecture }}
+      snapcraft-args: push ${{ steps.build-snap.outputs.snap }} --release '${{ inputs.publish-channel }}'

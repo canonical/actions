@@ -60,6 +60,8 @@ runs:
     run: |
       sudo snap install review-tools --channel ${{ inputs.tools-channel }}
 
+  - uses: docker/setup-qemu-action@v2
+
   - name: Build the snap
     id: build-snap
     uses: diddlesnaps/snapcraft-multiarch-action@v1

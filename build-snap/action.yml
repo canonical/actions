@@ -94,4 +94,4 @@ runs:
       store-auth: ${{ inputs.snapcraft-token }}
       snapcraft-channel: ${{ inputs.snapcraft-channel }}
       architecture: ${{ inputs.architecture }}
-      snapcraft-args: push ${{ steps.snap-name.outputs.snap-name }} --release '${{ inputs.publish-channel }}'
+      snapcraft-args: push ${{ steps.snap-name.outputs.snap-name }} --release ${{ inputs.publish-channel }}

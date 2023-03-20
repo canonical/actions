@@ -11,7 +11,7 @@ inputs:
       The token obtained with `snapcraft export-login --acls package_access,package_push,package_release -`. Required to publish.
   publish-channel:
     description: |
-      The snap channel to publish to. Required to publish.
+      Comma-separated list of snap channels to publish to. Required to publish.
   setup-lxd:
     description: |
       Set this to `false` if LXD is already set up.

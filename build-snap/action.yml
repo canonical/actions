@@ -85,6 +85,12 @@ runs:
       echo "snap-path=$( readlink -f ${SNAP_NAME} )" >> $GITHUB_OUTPUT
       echo "snap-name=${SNAP_NAME}" >> $GITHUB_OUTPUT
 
+  - name: Dump the Snapcraft log
+    if: failure()
+    shell: bash
+    run: |
+      cat ${HOME}/.local/state/snapcraft/log/snapcraft-*.log || true
+
   - name: Verify the built snap
     if: inputs.review == 'true'
     env:

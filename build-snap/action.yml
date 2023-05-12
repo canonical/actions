@@ -70,7 +70,7 @@ runs:
 
   - name: Set up LXD
     if: inputs.setup-lxd == 'true'
-    uses: canonical/setup-lxd@v0.1.0
+    uses: canonical/setup-lxd@v0.1.1
     with:
       channel: ${{ inputs.lxd-channel }}
 

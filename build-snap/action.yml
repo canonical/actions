@@ -9,6 +9,22 @@ inputs:
   snapcraft-token:
     description: |
       The token obtained with `snapcraft export-login --acls package_access,package_push,package_release -`. Required to publish.
+  launchpad-credentials:
+    description: |
+      Needed to build on Launchpad, for a foreign architecture.
+
+      Use a GitHub Actions secret with the contents of `lp_credentials` after:
+      ```
+      #/usr/bin/env python3
+
+      from launchpadlib.launchpad import Launchpad
+      from launchpadlib.credentials import UnencryptedFileCredentialStore
+      Launchpad.login_with("build-snap", "production", version="devel", credential_store=UnencryptedFileCredentialStore("lp_credentials"))
+      ```
+  launchpad-accept-public-upload:
+    description: |
+      When Launchpad is used for `snapcraft remote-build`, the code will be uploaded publicly. Set this to `true` to accept that.
+    default: false
   publish-channel:
     description: |
       Comma-separated list of snap channels to publish to. Required to publish.
@@ -27,6 +43,12 @@ inputs:
     description: |
       The channel to install review-tools from. Defaults to `stable`.
     default: stable
+  architecture:
+    description: |
+      The architecture to build for. Will use `snapcraft remote-build` for foreign architectures.
+
+      See [Snapcraft Remote build documentation](https://snapcraft.io/docs/remote-build) for more information.
+    default: amd64
   review:
     description: |
       Run `review-tools.snap-review` on the built snap (default `true`).
@@ -55,21 +77,31 @@ outputs:
 
 runs:
   using: composite
+
   steps:
+  - id: setup-snapcraft
+    shell: bash
+    env:
+      ARCHES: '{"X86": "i386", "X64": "amd64", "ARM": "armhf", "ARM64": "arm64"}'
+    run: |
+      sudo snap install snapcraft --classic --channel ${{ inputs.snapcraft-channel }}
+      sudo snap install review-tools --channel ${{ inputs.tools-channel }}
+
+      echo "compatible-arch=${{ fromJSON(env.ARCHES)[runner.arch] == inputs.architecture }}" >> $GITHUB_OUTPUT
+
   - shell: bash
     run: |
       if [ '${{ inputs.publish }}' == 'true' ]; then
         [ -n '${{ inputs.snapcraft-token }}' ] || ( echo '::error::`inputs.snapcraft-token` unset' && exit 1 )
         [ -n '${{ inputs.publish-channel }}' ] || ( echo '::error::`inputs.publish-channel` unset' && exit 1 )
       fi
-
-  - shell: bash
-    run: |
-      sudo snap install snapcraft --classic --channel ${{ inputs.snapcraft-channel }}
-      sudo snap install review-tools --channel ${{ inputs.tools-channel }}
+      if ${{ steps.setup-snapcraft.outputs.compatible-arch }}; then
+        [ -n '${{ inputs.launchpad-credentials }}' ] || ( echo '::error:`inputs.launchpad-credentials` required for foreign architecture builds' && exit 1 )
+        [ -n '${{ inputs.launchpad-accept-public-upload }}' ] || ( echo '::error:`inputs.launchpad-accept-public-upload` required `true` for foreign architecture builds' && exit 1 )
+      fi
 
   - name: Set up LXD
-    if: inputs.setup-lxd == 'true'
+    if: inputs.setup-lxd == 'true' && steps.setup-snapcraft.outputs.compatible-arch
     uses: canonical/setup-lxd@v0.1.1
     with:
       channel: ${{ inputs.lxd-channel }}
@@ -78,9 +110,18 @@ runs:
     id: build-snap
     env:
       SNAPCRAFT_BUILD_INFO: 1
+      GIT_COMMITTER_NAME: "Snapcraft remote build"
+      GIT_COMMITTER_EMAIL: "null@snapcraft.io"
     shell: bash
     run: |
-      /snap/bin/snapcraft --use-lxd | tee ${{ runner.temp }}/snap.log
+      if ${{ steps.setup-snapcraft.outputs.compatible-arch }}; then
+        /snap/bin/snapcraft --use-lxd | tee ${{ runner.temp }}/snap.log
+      else
+        mkdir -p $HOME/.local/share/snapcraft/provider/launchpad
+        echo "${{ inputs.launchpad-credentials }}" >> $HOME/.local/share/snapcraft/provider/launchpad/credentials
+        gawk --include inplace '/^architectures| build-on/ { next }; { print }' snap/snapcraft.yaml
+        /snap/bin/snapcraft remote-build --launchpad-accept-public-upload --build-for ${{ inputs.architecture }} | tee ${{ runner.temp }}/snap.log
+      fi
       SNAP_NAME="$( tail -n1 ${{ runner.temp }}/snap.log | awk '/Snapped/ { print $2 }' )"
       echo "snap-path=$( readlink -f ${SNAP_NAME} )" >> $GITHUB_OUTPUT
       echo "snap-name=${SNAP_NAME}" >> $GITHUB_OUTPUT

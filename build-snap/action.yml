@@ -95,7 +95,7 @@ runs:
         [ -n '${{ inputs.snapcraft-token }}' ] || ( echo '[error] `inputs.snapcraft-token` unset' && exit 1 )
         [ -n '${{ inputs.publish-channel }}' ] || ( echo '[error] `inputs.publish-channel` unset' && exit 1 )
       fi
-      if ${{ steps.setup-snapcraft.outputs.compatible-arch }}; then
+      if ! ${{ steps.setup-snapcraft.outputs.compatible-arch }}; then
         [ -n '${{ inputs.launchpad-credentials }}' ] || ( echo '[error] `inputs.launchpad-credentials` required for foreign architecture builds' && exit 1 )
         [ -n '${{ inputs.launchpad-accept-public-upload }}' ] || ( echo '[error] `inputs.launchpad-accept-public-upload` required `true` for foreign architecture builds' && exit 1 )
       fi

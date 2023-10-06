@@ -115,16 +115,24 @@ runs:
     shell: bash
     run: |
       if ${{ steps.setup-snapcraft.outputs.compatible-arch }}; then
-        /snap/bin/snapcraft --use-lxd | tee ${{ runner.temp }}/snap.log
+        /snap/bin/snapcraft --use-lxd
       else
         mkdir -p $HOME/.local/share/snapcraft/provider/launchpad
         echo "${{ inputs.launchpad-credentials }}" >> $HOME/.local/share/snapcraft/provider/launchpad/credentials
         gawk --include inplace '/^architectures| build-on/ { next }; { print }' snap/snapcraft.yaml
-        /snap/bin/snapcraft remote-build --launchpad-accept-public-upload --build-for ${{ inputs.architecture }} | tee ${{ runner.temp }}/snap.log
+        /snap/bin/snapcraft remote-build --launchpad-accept-public-upload --build-for ${{ inputs.architecture }}
       fi
-      SNAP_NAME="$( tail -n1 ${{ runner.temp }}/snap.log | awk '/Snapped/ { print $2 }' )"
-      echo "snap-path=$( readlink -f ${SNAP_NAME} )" >> $GITHUB_OUTPUT
-      echo "snap-name=${SNAP_NAME}" >> $GITHUB_OUTPUT
+      [ -f *.snap ] || ( echo "error: failed to locate the built snap"; exit 1 )
+      SNAP_PATH="$( readlink -f *.snap )"
+      echo "snap-path=${SNAP_PATH}" >> $GITHUB_OUTPUT
+      echo "snap-name=$( basename ${SNAP_PATH} )" >> $GITHUB_OUTPUT
+
+  - name: Dump the Snapcraft logs
+    if: ${{ !cancelled() }}
+    shell: bash
+    run: |
+      cat ${HOME}/.local/state/snapcraft/log/*.log || true
+      cat *_${{ inputs.architecture }}.txt || true
 
   - name: Verify the built snap
     if: inputs.review == 'true'
@@ -135,7 +143,7 @@ runs:
       REVIEW_OPTS=()
       [ -f '${{ inputs.plugs-file }}' ] && REVIEW_OPTS+=(--plugs '${{ inputs.plugs-file }}')
       [ -f '${{ inputs.slots-file }}' ] && REVIEW_OPTS+=(--slots '${{ inputs.slots-file }}')
-      /snap/bin/review-tools.snap-review "${REVIEW_OPTS[@]}" ${{ inputs.review-opts }} *.snap
+      /snap/bin/review-tools.snap-review "${REVIEW_OPTS[@]}" ${{ inputs.review-opts }} ${{ steps.build-snap.outputs.snap-path }}
 
   - name: Publish the built snap, if requested
     shell: bash
@@ -143,4 +151,4 @@ runs:
       SNAPCRAFT_STORE_CREDENTIALS: ${{ inputs.snapcraft-token }}
     run: |
       [ '${{ inputs.publish }}' == 'true' ] || exit 0
-      snapcraft upload *.snap --release '${{ inputs.publish-channel }}'
+      snapcraft upload ${{ steps.build-snap.outputs.snap-path }} --release '${{ inputs.publish-channel }}'

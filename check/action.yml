@@ -53,7 +53,7 @@ runs:
 
   - name: Create a check on public
     id: check
-    uses: LouisBrunner/checks-action@v1.1.1
+    uses: LouisBrunner/checks-action@v1.6.2
     with:
       token: ${{ steps.app-token.outputs.token }}
       repo: ${{ inputs.repo }}

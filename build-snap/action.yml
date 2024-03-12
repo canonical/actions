@@ -45,6 +45,10 @@ outputs:
     value: ${{ steps.build-snap.outputs.snap }}
     description: |
       Full path to the built snap.
+  snap-name:
+    value: ${{ steps.snap-name.outputs.snap-name }}
+    description: |
+      The file name of the built snap.
 
 runs:
   using: composite
@@ -82,7 +86,6 @@ runs:
 
   - name: Determine the snap name
     id: snap-name
-    if: inputs.publish == 'true'
     shell: bash
     run: |
       echo "snap-name=$( basename ${{ steps.build-snap.outputs.snap }} )" >> ${GITHUB_OUTPUT}

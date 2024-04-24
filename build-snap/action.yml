@@ -119,6 +119,7 @@ runs:
       else
         mkdir -p $HOME/.local/share/snapcraft/provider/launchpad
         echo "${{ inputs.launchpad-credentials }}" >> $HOME/.local/share/snapcraft/provider/launchpad/credentials
+        echo "${{ inputs.launchpad-credentials }}" >> $HOME/.local/share/snapcraft/launchpad-credentials
         gawk --include inplace '/^architectures| build-on/ { next }; { print }' snap/snapcraft.yaml
         /snap/bin/snapcraft remote-build --launchpad-accept-public-upload --build-for ${{ inputs.architecture }}
       fi

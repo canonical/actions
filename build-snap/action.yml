@@ -133,7 +133,7 @@ runs:
     shell: bash
     run: |
       cat ${HOME}/.local/state/snapcraft/log/*.log || true
-      cat *_${{ inputs.architecture }}.txt || true
+      cat *_${{ inputs.architecture }}*.txt || true
 
   - name: Verify the built snap
     if: inputs.review == 'true'

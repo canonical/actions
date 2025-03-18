@@ -8,7 +8,7 @@ inputs:
     default: ${{ github.base_ref }}
   head-branch:
     description: Head branch (source of a pull request)
-    required: true
+    required: false
     default: ${{ github.head_ref }}
 
 outputs:
@@ -26,7 +26,9 @@ runs:
         BASE_BRANCH=${{ inputs.base-branch }}
         HEAD_BRANCH=${{ inputs.head-branch }}
 
-        CHANGED_FILES=$(git diff --name-only $BASE_BRANCH..$HEAD_BRANCH)
+        git fetch origin $BASE_BRANCH --depth 1
+        git fetch origin $HEAD_BRANCH --depth 1
+        CHANGED_FILES=$(git diff --name-only origin/$BASE_BRANCH origin/$HEAD_BRANCH)
         {
           echo 'changed-files<<EOF'
           echo "${CHANGED_FILES}"

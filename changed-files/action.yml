@@ -14,7 +14,7 @@ inputs:
 outputs:
   changed-files:
     description: List of changed files
-    value: ${{ steps.changed-files.outputs.changed-files }}
+    value: ${{ steps.changed-files.outputs.all_changed_files }}
 
 runs:
   using: composite
@@ -30,7 +30,7 @@ runs:
         git fetch origin $HEAD_BRANCH --depth 1
         CHANGED_FILES=$(git diff --name-only origin/$BASE_BRANCH origin/$HEAD_BRANCH)
         {
-          echo 'changed-files<<EOF'
+          echo 'all_changed_files<<EOF'
           echo "${CHANGED_FILES}"
           echo EOF
         } >> $GITHUB_OUTPUT

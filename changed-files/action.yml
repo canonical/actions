@@ -20,13 +20,14 @@ runs:
       shell: bash
       run: |
         BASE_BRANCH=${{ inputs.base-branch }}
+        HEAD_BRANCH=${{ github.ref }}
         git fetch origin $BASE_BRANCH --depth 1
-        git fetch origin ${{ github.ref }} --depth 1
+        git fetch origin $HEAD_BRANCH --depth 1
 
-        echo "Changed files between $BASE_BRANCH and ${{ github.ref }}"
+        echo "Changed files between $BASE_BRANCH and $HEAD_BRANCH"
 
         cat <<END_OUTPUT >> $GITHUB_OUTPUT
         all_changed_files<<EOF
-        $( git diff --name-only origin/$BASE_BRANCH ${{ github.ref }})
+        $( git diff --name-only origin/$BASE_BRANCH origin/$HEAD_BRANCH)
         EOF
         END_OUTPUT

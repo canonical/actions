@@ -6,10 +6,6 @@ inputs:
     description: Base branch (destination of a pull request)
     required: true
     default: ${{ github.base_ref }}
-  head-branch:
-    description: Head branch (source of a pull request)
-    required: false
-    default: ${{ github.head_ref }}
 
 outputs:
   changed-files:
@@ -24,16 +20,9 @@ runs:
       shell: bash
       run: |
         BASE_BRANCH=${{ inputs.base-branch }}
-        HEAD_BRANCH=${{ inputs.head-branch }}
-        BASE_REPO_URL=${{ github.event.pull_request.base.repo.html_url }}
-
-        # Add remote to head in case it's a fork
-        HEAD_REPO_URL=${{ github.event.pull_request.head.repo.html_url }}
-        git remote add head $HEAD_REPO_URL
 
         git fetch origin $BASE_BRANCH --depth 1
-        git fetch head $HEAD_BRANCH --depth 1
-        CHANGED_FILES=$(git diff --name-only origin/$BASE_BRANCH head/$HEAD_BRANCH)
+        CHANGED_FILES=$(git diff --name-only origin/$BASE_BRANCH)
         {
           echo 'all_changed_files<<EOF'
           echo "${CHANGED_FILES}"

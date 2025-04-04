@@ -6,6 +6,10 @@ inputs:
     description: Base branch (destination of a pull request)
     required: true
     default: ${{ github.base_ref }}
+  head-branch:
+    description: Head branch (source of a pull request)
+    required: false
+    default: ${{ github.head_ref }}
 
 outputs:
   changed-files:
@@ -20,11 +24,11 @@ runs:
       shell: bash
       run: |
         BASE_BRANCH=${{ inputs.base-branch }}
-        HEAD_BRANCH="pull/19/merge"
-        git fetch origin $BASE_BRANCH --depth 1
-        git fetch origin $HEAD_BRANCH --depth 1
+        HEAD_BRANCH=${{ inputs.head-branch }}
+        HEAD_REF=pull/${{ github.ref_name }}:$HEAD_BRANCH
 
-        echo $(git branch -l)
+        git fetch origin $BASE_BRANCH --depth 1
+        git fetch origin $HEAD_REF --depth 1
 
         echo "Changed files between $BASE_BRANCH and $HEAD_BRANCH"
 

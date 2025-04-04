@@ -32,6 +32,6 @@ runs:
 
         cat <<END_OUTPUT >> $GITHUB_OUTPUT
         all_changed_files<<EOF
-        $( git diff --name-only origin/$BASE_BRANCH $HEAD_BRANCH)
+        $( git diff --name-only origin/$BASE_BRANCH $HEAD_BRANCH )
         EOF
         END_OUTPUT

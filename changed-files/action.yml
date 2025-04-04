@@ -25,13 +25,15 @@ runs:
       run: |
         BASE_BRANCH=${{ inputs.base-branch }}
         HEAD_BRANCH=${{ inputs.head-branch }}
-        echo "BASE_REPO_URL=${{ github.event.pull_request.base.repo.html_url }}" >> $GITHUB_ENV
-        echo "HEAD_REPO_URL=${{ github.event.pull_request.head.repo.html_url }}" >> $GITHUB_ENV
+        BASE_REPO_URL=${{ github.event.pull_request.base.repo.html_url }}
 
+        # Add remote to head in case it's a fork
+        HEAD_REPO_URL=${{ github.event.pull_request.head.repo.html_url }}
+        git remote add head $HEAD_REPO_URL
 
         git fetch origin $BASE_BRANCH --depth 1
-        # git fetch origin $HEAD_BRANCH --depth 1
-        CHANGED_FILES=$(git diff --name-only origin/$BASE_BRANCH) # origin/$HEAD_BRANCH)
+        git fetch head $HEAD_BRANCH --depth 1
+        CHANGED_FILES=$(git diff --name-only origin/$BASE_BRANCH head/$HEAD_BRANCH)
         {
           echo 'all_changed_files<<EOF'
           echo "${CHANGED_FILES}"

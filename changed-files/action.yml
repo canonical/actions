@@ -25,10 +25,9 @@ runs:
       run: |
         BASE_BRANCH=${{ inputs.base-branch }}
         HEAD_BRANCH=${{ inputs.head-branch }}
-        HEAD_COMMIT=$(git rev-parse HEAD)
-        echo "Head commit: $HEAD_COMMIT"
-        REPOSITORY=${{ github.server_url }}/${{ github.repository }}
-        echo "Repository: $REPOSITORY"
+        echo "BASE_REPO_URL=${{ github.event.pull_request.base.repo.html_url }}" >> $GITHUB_ENV
+        echo "HEAD_REPO_URL=${{ github.event.pull_request.head.repo.html_url }}" >> $GITHUB_ENV
+
 
         git fetch origin $BASE_BRANCH --depth 1
         # git fetch origin $HEAD_BRANCH --depth 1

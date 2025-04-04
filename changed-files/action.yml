@@ -22,8 +22,10 @@ runs:
         BASE_BRANCH=${{ inputs.base-branch }}
         git fetch origin $BASE_BRANCH --depth 1
 
+        echo "Changed files between $BASE_BRANCH and ${{ github.ref }}"
+
         cat <<END_OUTPUT >> $GITHUB_OUTPUT
         all_changed_files<<EOF
-        $( git diff --name-only origin/$BASE_BRANCH)
+        $( git diff --name-only origin/$BASE_BRANCH ${{ github.ref }})
         EOF
         END_OUTPUT

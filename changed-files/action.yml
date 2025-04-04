@@ -29,7 +29,7 @@ runs:
         echo "Head commit: $HEAD_COMMIT"
 
         git fetch origin $BASE_BRANCH --depth 1
-        git fetch origin $HEAD_BRANCH --depth 1
+        # git fetch origin $HEAD_BRANCH --depth 1
         CHANGED_FILES=$(git diff --name-only origin/$BASE_BRANCH) # origin/$HEAD_BRANCH)
         {
           echo 'all_changed_files<<EOF'

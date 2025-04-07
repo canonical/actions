@@ -9,7 +9,7 @@ inputs:
   head-branch:
     description: Head branch (source of a pull request)
     required: false
-    default: ${{ github.head_ref }}
+    default: ${{ github.ref }}
 
 outputs:
   changed-files:

@@ -1,0 +1,35 @@
+name: Changed files
+description: Get list of changed files between two branches
+
+inputs:
+  base-branch:
+    description: Base branch (destination of a pull request)
+    required: true
+    default: ${{ github.base_ref }}
+  head-branch:
+    description: Head branch (source of a pull request)
+    required: false
+    default: ${{ github.head_ref }}
+
+outputs:
+  changed-files:
+    description: List of changed files
+    value: ${{ steps.changed-files.outputs.all_changed_files }}
+
+runs:
+  using: composite
+  steps:
+    - name: Get changed files
+      id: changed-files
+      shell: bash
+      run: |
+        BASE_BRANCH=${{ inputs.base-branch }}
+        HEAD_BRANCH=${{ inputs.head-branch }}
+
+        git fetch origin $BASE_BRANCH --depth 1
+        git fetch origin $HEAD_BRANCH --depth 1
+        cat <<END_OUTPUT >> $GITHUB_OUTPUT
+        all_changed_files<<EOF
+        $( git diff --name-only origin/$BASE_BRANCH origin/$HEAD_BRANCH )
+        EOF
+        END_OUTPUT

@@ -25,7 +25,6 @@ runs:
       run: |
         BASE_BRANCH=${{ inputs.base-branch }}
         HEAD_BRANCH=${{ inputs.head-branch }}
-        HEAD_REF=${{ github.ref }}:$HEAD_BRANCH
 
         git fetch origin $BASE_BRANCH --depth 1
         git fetch origin $HEAD_BRANCH --depth 1

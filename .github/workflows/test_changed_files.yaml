@@ -1,5 +1,5 @@
 on:
-  push:
+  pull_request:
     paths:
       - 'changed-files/action.yml'
 
@@ -7,17 +7,23 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Get changed files
         id: changed-files
-        uses: canonical/changed-files@main
+        uses: ./changed-files
 
       - name: Check changed files output
         run: |
-          changed_files="${{ steps.changed-files.outputs.all_changed_files }}"
+          changed_files="${{ steps.changed-files.outputs.changed-files }}"
+          expected_file="changed-files/action.yml"
 
-          if [[ $changed_files =~ "changed-files/action.yml" ]]; then
-            echo "changed-files/action.yml found"
+          if [[ $changed_files =~ $expected_file ]]; then
+            echo "$expected_file found in changed files"
           else
-            echo "changed-files/action.yml not found"
+            echo "$expected_file not found in changed files"
             exit 1
           fi

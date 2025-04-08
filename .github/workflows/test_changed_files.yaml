@@ -1,5 +1,5 @@
 on:
-  push:
+  pull_request:
     paths:
       - 'changed-files/action.yml'
 
@@ -9,7 +9,7 @@ jobs:
     steps:
       - name: Get changed files
         id: changed-files
-        uses: canonical/changed-files@main
+        uses: canonical/actions/changed-files@main
 
       - name: Check changed files output
         run: |

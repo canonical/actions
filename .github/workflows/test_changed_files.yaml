@@ -14,7 +14,9 @@ jobs:
 
       - name: Get changed files
         id: changed-files
-        uses: canonical/actions/changed-files@main
+        uses: ./changed-files
+        # uses: canonical/actions/changed-files@main
+        # uses: renangreca/actions/changed-files@fix-head-ref
 
       - name: Check changed files output
         run: |

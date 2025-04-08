@@ -7,6 +7,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Get changed files
         id: changed-files
         uses: canonical/actions/changed-files@main

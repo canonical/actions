@@ -14,11 +14,13 @@ jobs:
 
       - name: Get changed files
         id: changed-files
-        uses: canonical/actions/changed-files@main
+        uses: ./changed-files
+        # uses: canonical/actions/changed-files@main
+        # uses: renangreca/actions/changed-files@fix-head-ref
 
       - name: Check changed files output
         run: |
-          changed_files="${{ steps.changed-files.outputs.all_changed_files }}"
+          changed_files="${{ steps.changed-files.outputs.changed-files }}"
 
           if [[ $changed_files =~ "changed-files/action.yml" ]]; then
             echo "changed-files/action.yml found"

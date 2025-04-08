@@ -1,0 +1,23 @@
+on:
+  push:
+    paths:
+      - 'changed-files/action.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get changed files
+        id: changed-files
+        uses: canonical/changed-files@main
+
+      - name: Check changed files output
+        run: |
+          changed_files="${{ steps.changed-files.outputs.all_changed_files }}"
+
+          if [[ $changed_files =~ "changed-files/action.yml" ]]; then
+            echo "changed-files/action.yml found"
+          else
+            echo "changed-files/action.yml not found"
+            exit 1
+          fi

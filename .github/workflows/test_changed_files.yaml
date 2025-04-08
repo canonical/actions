@@ -15,16 +15,15 @@ jobs:
       - name: Get changed files
         id: changed-files
         uses: ./changed-files
-        # uses: canonical/actions/changed-files@main
-        # uses: renangreca/actions/changed-files@fix-head-ref
 
       - name: Check changed files output
         run: |
           changed_files="${{ steps.changed-files.outputs.changed-files }}"
+          expected_file="changed-files/action.yml"
 
-          if [[ $changed_files =~ "changed-files/action.yml" ]]; then
-            echo "changed-files/action.yml found"
+          if [[ $changed_files =~ $expected_file ]]; then
+            echo "$expected_file found in changed files"
           else
-            echo "changed-files/action.yml not found"
+            echo "$expected_file not found in changed files"
             exit 1
           fi

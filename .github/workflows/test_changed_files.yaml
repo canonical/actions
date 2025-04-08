@@ -20,7 +20,7 @@ jobs:
 
       - name: Check changed files output
         run: |
-          changed_files="${{ steps.changed-files.outputs.all_changed_files }}"
+          changed_files="${{ steps.changed-files.outputs.changed-files }}"
 
           if [[ $changed_files =~ "changed-files/action.yml" ]]; then
             echo "changed-files/action.yml found"

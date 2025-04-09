@@ -1,0 +1,96 @@
+name: Test changed-files action
+
+on:
+  pull_request:
+    paths:
+      - 'changed-files/action.yml'
+
+jobs:
+  test-changed-file:
+    name: Check that changed-files action detects changed files in the current PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Get changed files
+        id: changed-files
+        uses: ./changed-files
+
+      - name: Check changed files output
+        run: |
+          changed_files="${{ steps.changed-files.outputs.changed-files }}"
+          # This action only triggers on changes to `changed-files/action.yml`
+          # Thus `changed-files/action.yml` should be in the list of changed files
+          expected_file="changed-files/action.yml"
+
+          # Check that the file is in the list of changed files
+          if echo $changed_files | grep --fixed-strings --quiet --line-regexp "$expected_file"; then
+            echo "$expected_file found in changed files"
+          else
+            echo "$expected_file not found in changed files"
+            exit 1
+          fi
+
+  test-known-refs:
+    name: Check that changed-files action works with custom refs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Get changed files
+        id: changed-files
+        uses: ./changed-files
+        with:
+          base-ref: a7fc56f262863f374b44aa020e163c013d3c75ad
+          head-ref: 20063fbd0a3dde28a87d0a8767a4f16c7a5c9c6e
+
+      - name: Check changed files output
+        run: |
+          changed_files="${{ steps.changed-files.outputs.changed-files }}"
+          # We know that `changed-files/action.yml` is changed between the two refs
+          expected_file="changed-files/action.yml"
+
+          # Check that the file is in the list of changed files
+          if echo $changed_files | grep --fixed-strings --quiet --line-regexp "$expected_file"; then
+            echo "$expected_file found in changed files"
+          else
+            echo "$expected_file not found in changed files"
+            exit 1
+          fi
+
+  test-unchanged-file:
+    name: Check that changed-files action does not detect unchanged files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Get changed files
+        id: changed-files
+        uses: ./changed-files
+        with:
+          base-ref: a7fc56f262863f374b44aa020e163c013d3c75ad
+          head-ref: 20063fbd0a3dde28a87d0a8767a4f16c7a5c9c6e
+
+      - name: Check changed files output
+        run: |
+          changed_files="${{ steps.changed-files.outputs.changed-files }}"
+          # We know that `renovate.json` is not changed between the two refs
+          expected_file="renovate.json"
+
+          # Check that the file is *not* in the list of changed files
+          if echo $changed_files | grep --fixed-strings --quiet --line-regexp "$expected_file"; then
+            echo "$expected_file found in changed files"
+            exit 1
+          else
+            echo "$expected_file not found in changed files"
+          fi
+

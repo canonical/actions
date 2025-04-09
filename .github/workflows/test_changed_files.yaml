@@ -22,9 +22,12 @@ jobs:
       - name: Check changed files output
         run: |
           changed_files="${{ steps.changed-files.outputs.changed-files }}"
+          # This action only triggers on changes to `changed-files/action.yml`
+          # Thus `changed-files/action.yml` should be in the list of changed files
           expected_file="changed-files/action.yml"
 
-          if echo $changed_files | grep -F -q -x "$expected_file"; then
+          # Check that the file is in the list of changed files
+          if echo $changed_files | grep --fixed-strings --quiet --line-regexp "$expected_file"; then
             echo "$expected_file found in changed files"
           else
             echo "$expected_file not found in changed files"
@@ -50,9 +53,11 @@ jobs:
       - name: Check changed files output
         run: |
           changed_files="${{ steps.changed-files.outputs.changed-files }}"
+          # We know that `changed-files/action.yml` is changed between the two refs
           expected_file="changed-files/action.yml"
 
-          if echo $changed_files | grep -F -q -x "$expected_file"; then
+          # Check that the file is in the list of changed files
+          if echo $changed_files | grep --fixed-strings --quiet --line-regexp "$expected_file"; then
             echo "$expected_file found in changed files"
           else
             echo "$expected_file not found in changed files"
@@ -81,7 +86,8 @@ jobs:
           # We know that `renovate.json` is not changed between the two refs
           expected_file="renovate.json"
 
-          if echo $changed_files | grep -F -q -x "$expected_file"; then
+          # Check that the file is *not* in the list of changed files
+          if echo $changed_files | grep --fixed-strings --quiet --line-regexp "$expected_file"; then
             echo "$expected_file found in changed files"
             exit 1
           else

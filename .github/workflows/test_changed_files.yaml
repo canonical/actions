@@ -4,7 +4,8 @@ on:
       - 'changed-files/action.yml'
 
 jobs:
-  test-current-pr:
+  test-changed-file:
+    name: Check that changed-files action detects changed files
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -28,26 +29,55 @@ jobs:
             exit 1
           fi
 
-  # test-known-refs:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 1
-  #
-  #     - name: Get changed files
-  #       id: changed-files
-  #       uses: ./changed-files
-  #
-  #     - name: Check changed files output
-  #       run: |
-  #         changed_files="${{ steps.changed-files.outputs.changed-files }}"
-  #         expected_file="changed-files/action.yml"
-  #
-  #         if [[ $changed_files =~ $expected_file ]]; then
-  #           echo "$expected_file found in changed files"
-  #         else
-  #           echo "$expected_file not found in changed files"
-  #           exit 1
-  #         fi
+  test-unchanged-file:
+    name: Check that changed-files action does not detect unchanged files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Get changed files
+        id: changed-files
+        uses: ./changed-files
+
+      - name: Check changed files output
+        run: |
+          changed_files="${{ steps.changed-files.outputs.changed-files }}"
+          expected_file="renovate.json"
+
+          if echo $changed_files | grep -F -q -x "$expected_file"; then
+            echo "$expected_file found in changed files"
+            exit 1
+          else
+            echo "$expected_file not found in changed files"
+          fi
+
+  test-known-refs:
+    name: Check that changed-files action works with custom refs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Get changed files
+        id: changed-files
+        uses: ./changed-files
+        with:
+          base-ref: a7fc56f262863f374b44aa020e163c013d3c75ad
+          head-ref: 20063fbd0a3dde28a87d0a8767a4f16c7a5c9c6e
+
+      - name: Check changed files output
+        run: |
+          changed_files="${{ steps.changed-files.outputs.changed-files }}"
+          expected_file="changed-files/action.yml"
+
+          if [[ $changed_files =~ $expected_file ]]; then
+            echo "$expected_file found in changed files"
+          else
+            echo "$expected_file not found in changed files"
+            exit 1
+          fi

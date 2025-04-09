@@ -2,11 +2,11 @@ name: Changed files
 description: Get list of changed files between two git refs.
 
 inputs:
-  base-branch:
+  base-ref:
     description: Base branch (destination of a pull request). Defaults to the base branch of the pull request.
     required: false
     default: ${{ github.base_ref }}
-  head-branch:
+  head-ref:
     description: Head branch (source of a pull request). Defaults to the ref of the pull request.
     required: false
     default: ${{ github.ref }}
@@ -23,8 +23,8 @@ runs:
       id: changed-files
       shell: bash
       run: |
-        git fetch origin ${{ inputs.base_ref }}:refs/heads/changed_base --depth 1
-        git fetch origin ${{ inputs.head_ref }}:refs/heads/changed_head --depth 1
+        git fetch origin ${{ inputs.base-ref }}:refs/heads/changed_base --depth 1
+        git fetch origin ${{ inputs.head-ref }}:refs/heads/changed_head --depth 1
 
         cat <<END_OUTPUT >> $GITHUB_OUTPUT
         all_changed_files<<EOF

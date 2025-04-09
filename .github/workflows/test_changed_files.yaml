@@ -1,3 +1,5 @@
+name: Test changed-files action
+
 on:
   pull_request:
     paths:

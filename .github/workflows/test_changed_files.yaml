@@ -4,7 +4,7 @@ on:
       - 'changed-files/action.yml'
 
 jobs:
-  test:
+  test-current-pr:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -21,9 +21,33 @@ jobs:
           changed_files="${{ steps.changed-files.outputs.changed-files }}"
           expected_file="changed-files/action.yml"
 
-          if [[ $changed_files =~ $expected_file ]]; then
+          if echo $changed_files | grep -F -q -x "$expected_file"; then
             echo "$expected_file found in changed files"
           else
             echo "$expected_file not found in changed files"
             exit 1
           fi
+
+  # test-known-refs:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 1
+  #
+  #     - name: Get changed files
+  #       id: changed-files
+  #       uses: ./changed-files
+  #
+  #     - name: Check changed files output
+  #       run: |
+  #         changed_files="${{ steps.changed-files.outputs.changed-files }}"
+  #         expected_file="changed-files/action.yml"
+  #
+  #         if [[ $changed_files =~ $expected_file ]]; then
+  #           echo "$expected_file found in changed files"
+  #         else
+  #           echo "$expected_file not found in changed files"
+  #           exit 1
+  #         fi

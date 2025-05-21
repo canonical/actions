@@ -102,7 +102,7 @@ runs:
 
   - name: Set up LXD
     if: inputs.setup-lxd == 'true' && steps.setup-snapcraft.outputs.compatible-arch
-    uses: canonical/setup-lxd@v0.1.2
+    uses: canonical/setup-lxd@v0.1.3
     with:
       channel: ${{ inputs.lxd-channel }}
 

@@ -122,6 +122,8 @@ runs:
         echo "${{ inputs.launchpad-credentials }}" >> $HOME/.local/share/snapcraft/launchpad-credentials
         yq --inplace 'del(.architectures)' snap/snapcraft.yaml
         yq --inplace 'del(.platforms)' snap/snapcraft.yaml
+        # Launchpad doesn't support Git LFS
+        git lfs uninstall
         /snap/bin/snapcraft remote-build --launchpad-accept-public-upload --build-for ${{ inputs.architecture }}
       fi
       [ -f *.snap ] || ( echo "error: failed to locate the built snap"; exit 1 )

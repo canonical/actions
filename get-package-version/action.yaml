@@ -34,16 +34,14 @@ runs:
           -s https://api.github.com/orgs/${ORGANIZATION}/packages/container/${PACKAGE_NAME}/versions
         )
 
-        echo $json
-
-        if [ -z ${{ inputs.version }} ]; then
+        if [ -z $VERSION ]; then
           # If version is not specified, get the most recent version
           version=$(echo $json |
             jq -r 'sort_by(.created_at) | reverse | .[0] | .metadata.container.tags[0]')
         else
           # If version is specified, check if it exists
           version=$(echo $json |
-            jq -r 'sort_by(.created_at) | reverse | .[] | select(.metadata.container.tags[0] == "'${{ inputs.version }}'") | .metadata.container.tags[0]'
+            jq -r 'sort_by(.created_at) | reverse | .[] | select(.metadata.container.tags[0] == "'$VERSION'") | .metadata.container.tags[0]'
           )
 
           if [ -z $version ]; then
@@ -58,3 +56,4 @@ runs:
         ORGANIZATION: ${{ inputs.organization }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         PACKAGE_NAME: ${{ inputs.package-name }}
+        VERSION: ${{ inputs.version }}

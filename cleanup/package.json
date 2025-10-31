@@ -7,7 +7,7 @@
   "dependencies": {
     "@actions/core": "1",
     "@actions/glob": "0",
-    "@actions/io": "1"
+    "@actions/io": "2"
   },
   "repository": {
     "type": "git",

@@ -5,7 +5,7 @@
   "author": "Michał Sawicz <michal.sawicz@canonical.com>",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "1",
+    "@actions/core": "3",
     "@actions/glob": "0",
     "@actions/io": "1"
   },

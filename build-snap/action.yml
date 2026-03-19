@@ -110,7 +110,7 @@ runs:
       fi
 
   - name: Set up LXD
-    if: inputs.setup-lxd == 'true' && steps.setup-snapcraft.outputs.compatible-arch
+    if: inputs.setup-lxd == 'true' && steps.setup-snapcraft.outputs.compatible-arch == 'true'
     uses: canonical/setup-lxd@8c6a87bfb56aa48f3fb9b830baa18562d8bfd4ee  # v1
     with:
       channel: ${{ inputs.lxd-channel }}
@@ -130,8 +130,9 @@ runs:
         /snap/bin/snapcraft --use-lxd
       else
         mkdir -p $HOME/.local/share/snapcraft/provider/launchpad
-        echo "${LAUNCHPAD_CREDENTIALS}" >> $HOME/.local/share/snapcraft/provider/launchpad/credentials
-        echo "${LAUNCHPAD_CREDENTIALS}" >> $HOME/.local/share/snapcraft/launchpad-credentials
+        echo "${LAUNCHPAD_CREDENTIALS}" > $HOME/.local/share/snapcraft/provider/launchpad/credentials
+        echo "${LAUNCHPAD_CREDENTIALS}" > $HOME/.local/share/snapcraft/launchpad-credentials
+        chmod 600 $HOME/.local/share/snapcraft/provider/launchpad/credentials $HOME/.local/share/snapcraft/launchpad-credentials
         yq --inplace 'del(.architectures)' snap/snapcraft.yaml
         yq --inplace 'del(.platforms)' snap/snapcraft.yaml
         # Launchpad doesn't support Git LFS
@@ -165,7 +166,7 @@ runs:
       REVIEW_OPTS=()
       [ -f "${PLUGS_FILE}" ] && REVIEW_OPTS+=(--plugs "${PLUGS_FILE}")
       [ -f "${SLOTS_FILE}" ] && REVIEW_OPTS+=(--slots "${SLOTS_FILE}")
-      /snap/bin/review-tools.snap-review "${REVIEW_OPTS[@]}" ${SNAP_REVIEW_OPTS} ${SNAP_PATH}
+      /snap/bin/review-tools.snap-review "${REVIEW_OPTS[@]}" ${SNAP_REVIEW_OPTS} "${SNAP_PATH}"
 
   - name: Publish the built snap, if requested
     shell: bash
@@ -176,4 +177,4 @@ runs:
       PUBLISH_CHANNEL: ${{ inputs.publish-channel }}
     run: |
       [ "${PUBLISH}" == "true" ] || exit 0
-      snapcraft upload ${SNAP_PATH} --release "${PUBLISH_CHANNEL}"
+      snapcraft upload "${SNAP_PATH}" --release "${PUBLISH_CHANNEL}"

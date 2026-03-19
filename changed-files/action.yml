@@ -26,8 +26,8 @@ runs:
         BASE_REF: ${{ inputs.base-ref }}
         HEAD_REF: ${{ inputs.head-ref }}
       run: |
-        git fetch origin ${BASE_REF}:refs/heads/changed_base --depth 1
-        git fetch origin ${HEAD_REF}:refs/heads/changed_head --depth 1
+        git fetch origin "${BASE_REF}:refs/heads/changed_base" --depth 1
+        git fetch origin "${HEAD_REF}:refs/heads/changed_head" --depth 1
 
         cat <<END_OUTPUT >> $GITHUB_OUTPUT
         all_changed_files<<EOF

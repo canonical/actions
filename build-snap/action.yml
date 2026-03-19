@@ -106,7 +106,7 @@ runs:
       fi
       if ! ${COMPATIBLE_ARCH}; then
         [ -n "${LAUNCHPAD_CREDENTIALS}" ] || ( echo '[error] `inputs.launchpad-credentials` required for foreign architecture builds' && exit 1 )
-        [ -n "${LAUNCHPAD_ACCEPT_PUBLIC_UPLOAD}" ] || ( echo '[error] `inputs.launchpad-accept-public-upload` required `true` for foreign architecture builds' && exit 1 )
+        [ "${LAUNCHPAD_ACCEPT_PUBLIC_UPLOAD}" = "true" ] || ( echo '[error] `inputs.launchpad-accept-public-upload` required `true` for foreign architecture builds' && exit 1 )
       fi
 
   - name: Set up LXD
@@ -137,7 +137,7 @@ runs:
         yq --inplace 'del(.platforms)' snap/snapcraft.yaml
         # Launchpad doesn't support Git LFS
         git lfs uninstall
-        /snap/bin/snapcraft remote-build --launchpad-accept-public-upload --build-for ${ARCHITECTURE}
+        /snap/bin/snapcraft remote-build --launchpad-accept-public-upload --build-for "${ARCHITECTURE}"
       fi
       [ -f *.snap ] || ( echo "error: failed to locate the built snap"; exit 1 )
       SNAP_PATH="$( readlink -f *.snap )"

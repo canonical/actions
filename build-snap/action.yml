@@ -83,26 +83,35 @@ runs:
     shell: bash
     env:
       ARCHES: '{"X86": "i386", "X64": "amd64", "ARM": "armhf", "ARM64": "arm64"}'
+      SNAPCRAFT_CHANNEL: ${{ inputs.snapcraft-channel }}
+      TOOLS_CHANNEL: ${{ inputs.tools-channel }}
     run: |
-      sudo snap install snapcraft --classic --channel ${{ inputs.snapcraft-channel }}
-      sudo snap install review-tools --channel ${{ inputs.tools-channel }}
+      sudo snap install snapcraft --classic --channel ${SNAPCRAFT_CHANNEL}
+      sudo snap install review-tools --channel ${TOOLS_CHANNEL}
 
       echo "compatible-arch=${{ fromJSON(env.ARCHES)[runner.arch] == inputs.architecture }}" >> $GITHUB_OUTPUT
 
   - shell: bash
+    env:
+      PUBLISH: ${{ inputs.publish }}
+      SNAPCRAFT_TOKEN: ${{ inputs.snapcraft-token }}
+      PUBLISH_CHANNEL: ${{ inputs.publish-channel }}
+      COMPATIBLE_ARCH: ${{ steps.setup-snapcraft.outputs.compatible-arch }}
+      LAUNCHPAD_CREDENTIALS: ${{ inputs.launchpad-credentials }}
+      LAUNCHPAD_ACCEPT_PUBLIC_UPLOAD: ${{ inputs.launchpad-accept-public-upload }}
     run: |
-      if [ '${{ inputs.publish }}' == 'true' ]; then
-        [ -n '${{ inputs.snapcraft-token }}' ] || ( echo '[error] `inputs.snapcraft-token` unset' && exit 1 )
-        [ -n '${{ inputs.publish-channel }}' ] || ( echo '[error] `inputs.publish-channel` unset' && exit 1 )
+      if [ "${PUBLISH}" == "true" ]; then
+        [ -n "${SNAPCRAFT_TOKEN}" ] || ( echo '[error] `inputs.snapcraft-token` unset' && exit 1 )
+        [ -n "${PUBLISH_CHANNEL}" ] || ( echo '[error] `inputs.publish-channel` unset' && exit 1 )
       fi
-      if ! ${{ steps.setup-snapcraft.outputs.compatible-arch }}; then
-        [ -n '${{ inputs.launchpad-credentials }}' ] || ( echo '[error] `inputs.launchpad-credentials` required for foreign architecture builds' && exit 1 )
-        [ -n '${{ inputs.launchpad-accept-public-upload }}' ] || ( echo '[error] `inputs.launchpad-accept-public-upload` required `true` for foreign architecture builds' && exit 1 )
+      if ! ${COMPATIBLE_ARCH}; then
+        [ -n "${LAUNCHPAD_CREDENTIALS}" ] || ( echo '[error] `inputs.launchpad-credentials` required for foreign architecture builds' && exit 1 )
+        [ -n "${LAUNCHPAD_ACCEPT_PUBLIC_UPLOAD}" ] || ( echo '[error] `inputs.launchpad-accept-public-upload` required `true` for foreign architecture builds' && exit 1 )
       fi
 
   - name: Set up LXD
     if: inputs.setup-lxd == 'true' && steps.setup-snapcraft.outputs.compatible-arch
-    uses: canonical/setup-lxd@v0.1.2
+    uses: canonical/setup-lxd@8c6a87bfb56aa48f3fb9b830baa18562d8bfd4ee  # v1
     with:
       channel: ${{ inputs.lxd-channel }}
 
@@ -112,19 +121,22 @@ runs:
       SNAPCRAFT_BUILD_INFO: 1
       GIT_COMMITTER_NAME: "Snapcraft remote build"
       GIT_COMMITTER_EMAIL: "null@snapcraft.io"
+      COMPATIBLE_ARCH: ${{ steps.setup-snapcraft.outputs.compatible-arch }}
+      LAUNCHPAD_CREDENTIALS: ${{ inputs.launchpad-credentials }}
+      ARCHITECTURE: ${{ inputs.architecture }}
     shell: bash
     run: |
-      if ${{ steps.setup-snapcraft.outputs.compatible-arch }}; then
+      if ${COMPATIBLE_ARCH}; then
         /snap/bin/snapcraft --use-lxd
       else
         mkdir -p $HOME/.local/share/snapcraft/provider/launchpad
-        echo "${{ inputs.launchpad-credentials }}" >> $HOME/.local/share/snapcraft/provider/launchpad/credentials
-        echo "${{ inputs.launchpad-credentials }}" >> $HOME/.local/share/snapcraft/launchpad-credentials
+        echo "${LAUNCHPAD_CREDENTIALS}" >> $HOME/.local/share/snapcraft/provider/launchpad/credentials
+        echo "${LAUNCHPAD_CREDENTIALS}" >> $HOME/.local/share/snapcraft/launchpad-credentials
         yq --inplace 'del(.architectures)' snap/snapcraft.yaml
         yq --inplace 'del(.platforms)' snap/snapcraft.yaml
         # Launchpad doesn't support Git LFS
         git lfs uninstall
-        /snap/bin/snapcraft remote-build --launchpad-accept-public-upload --build-for ${{ inputs.architecture }}
+        /snap/bin/snapcraft remote-build --launchpad-accept-public-upload --build-for ${ARCHITECTURE}
       fi
       [ -f *.snap ] || ( echo "error: failed to locate the built snap"; exit 1 )
       SNAP_PATH="$( readlink -f *.snap )"
@@ -134,25 +146,34 @@ runs:
   - name: Dump the Snapcraft logs
     if: ${{ !cancelled() }}
     shell: bash
+    env:
+      ARCHITECTURE: ${{ inputs.architecture }}
     run: |
       cat ${HOME}/.local/state/snapcraft/log/*.log || true
-      cat *_${{ inputs.architecture }}*.txt || true
+      cat *_${ARCHITECTURE}*.txt || true
 
   - name: Verify the built snap
     if: inputs.review == 'true'
     env:
       SNAP_ENFORCE_RESQUASHFS: 0
+      PLUGS_FILE: ${{ inputs.plugs-file }}
+      SLOTS_FILE: ${{ inputs.slots-file }}
+      SNAP_REVIEW_OPTS: ${{ inputs.review-opts }}
+      SNAP_PATH: ${{ steps.build-snap.outputs.snap-path }}
     shell: bash
     run: |
       REVIEW_OPTS=()
-      [ -f '${{ inputs.plugs-file }}' ] && REVIEW_OPTS+=(--plugs '${{ inputs.plugs-file }}')
-      [ -f '${{ inputs.slots-file }}' ] && REVIEW_OPTS+=(--slots '${{ inputs.slots-file }}')
-      /snap/bin/review-tools.snap-review "${REVIEW_OPTS[@]}" ${{ inputs.review-opts }} ${{ steps.build-snap.outputs.snap-path }}
+      [ -f "${PLUGS_FILE}" ] && REVIEW_OPTS+=(--plugs "${PLUGS_FILE}")
+      [ -f "${SLOTS_FILE}" ] && REVIEW_OPTS+=(--slots "${SLOTS_FILE}")
+      /snap/bin/review-tools.snap-review "${REVIEW_OPTS[@]}" ${SNAP_REVIEW_OPTS} ${SNAP_PATH}
 
   - name: Publish the built snap, if requested
     shell: bash
     env:
       SNAPCRAFT_STORE_CREDENTIALS: ${{ inputs.snapcraft-token }}
+      PUBLISH: ${{ inputs.publish }}
+      SNAP_PATH: ${{ steps.build-snap.outputs.snap-path }}
+      PUBLISH_CHANNEL: ${{ inputs.publish-channel }}
     run: |
-      [ '${{ inputs.publish }}' == 'true' ] || exit 0
-      snapcraft upload ${{ steps.build-snap.outputs.snap-path }} --release '${{ inputs.publish-channel }}'
+      [ "${PUBLISH}" == "true" ] || exit 0
+      snapcraft upload ${SNAP_PATH} --release "${PUBLISH_CHANNEL}"

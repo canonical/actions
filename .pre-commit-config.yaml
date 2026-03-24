@@ -6,6 +6,7 @@ repos:
   - id: end-of-file-fixer
   - id: check-added-large-files
 
+# static analysis tool for GitHub Actions
 - repo: https://github.com/zizmorcore/zizmor-pre-commit
   rev: ea2eb407b4cbce87cf0d502f36578950494f5ac9  # frozen: v1.23.1
   hooks:

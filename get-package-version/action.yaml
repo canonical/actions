@@ -1,0 +1,59 @@
+name: Get rock version
+description: Get latest version tag using GitHub API
+
+inputs:
+  version:
+    description: Version of the workflow. Leave blank for latest.
+    required: false
+  organization:
+    description: Organization of the package to get the version from
+    required: true
+  package-name:
+    description: Name of the package to get the version from
+    required: true
+  github-token:
+    description: GitHub token
+    required: true
+
+outputs:
+  version:
+    description: Version of the workflow
+    value: ${{ steps.get-version.outputs.version }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get version tag
+      id: get-version
+      shell: bash
+      run: |
+        json=$(curl -L \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          -s https://api.github.com/orgs/${ORGANIZATION}/packages/container/${PACKAGE_NAME}/versions
+        )
+
+        if [ -z $VERSION ]; then
+          # If version is not specified, get the most recent version
+          version=$(echo $json |
+            jq -r 'sort_by(.created_at) | reverse | .[0] | .metadata.container.tags[0]')
+        else
+          # If version is specified, check if it exists
+          version=$(echo $json |
+            jq -r 'sort_by(.created_at) | reverse | .[] | select(.metadata.container.tags[0] == "'$VERSION'") | .metadata.container.tags[0]'
+          )
+
+          if [ -z $version ]; then
+            echo "Version ${{ inputs.version }} not found"
+            exit 1
+          fi
+        fi
+
+        echo "version=${version}" >> $GITHUB_OUTPUT
+        echo "Found version: ${version}"
+      env:
+        ORGANIZATION: ${{ inputs.organization }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        PACKAGE_NAME: ${{ inputs.package-name }}
+        VERSION: ${{ inputs.version }}

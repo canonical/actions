@@ -1,0 +1,103 @@
+name: Test get-package-version
+
+on:
+  pull_request:
+    paths:
+      - 'get-package-version/action.yaml'
+  push:
+    # Temporary; for testing the PR
+    branches:
+      - add-get-rock-version
+
+jobs:
+  test-unspecified-version:
+    # If no version is specified, a valid version is returned
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run get-package-version
+        uses: ./get-package-version
+        id: get-package-version
+        with:
+          organization: canonical
+          package-name: dbt-workflow
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check output
+        run: |
+          if [ -z "$VERSION" ]; then
+            echo "Version not found"
+            exit 1
+          else
+            echo "Version found: $VERSION"
+          fi
+        env:
+          VERSION: ${{ steps.get-package-version.outputs.version }}
+
+  test-existing-version:
+    # If an existing version is specified, the same version is returned
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run get-package-version
+        uses: ./get-package-version
+        id: get-package-version
+        with:
+          organization: canonical
+          package-name: dbt-workflow
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: 1.6.0
+
+      - name: Check output
+        run: |
+          if [ -z "$VERSION" ]; then
+            echo "Version not found"
+            exit 1
+          else
+            echo "Version found: $VERSION"
+            if [ "$VERSION" != "1.6.0" ]; then
+              echo "Version mismatch, expected 1.6.0, got $VERSION"
+              exit 1
+            fi
+          fi
+        env:
+          VERSION: ${{ steps.get-package-version.outputs.version }}
+
+  test-non-existing-version:
+    # If a non-existing version is specified, an error is raised
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run get-package-version
+        uses: ./get-package-version
+        id: get-package-version
+        with:
+          organization: canonical
+          package-name: dbt-workflow
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: 0.0.0
+        continue-on-error: true
+
+      - name: Check output
+        run: |
+          if [ "$STATUS" == "failure" ]; then
+            echo "Error correctly raised"
+          else
+            echo "Error not raised"
+            exit 1
+          fi
+        env:
+          VERSION: ${{ steps.get-package-version.outputs.version }}
+          STATUS: ${{ steps.get-package-version.outcome }}

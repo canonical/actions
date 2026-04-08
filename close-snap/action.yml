@@ -24,17 +24,21 @@ runs:
   using: composite
   steps:
   - shell: bash
+    env:
+      SNAPCRAFT_CHANNEL: ${{ inputs.snapcraft-channel }}
     run: |
-      sudo snap install snapcraft --classic --channel ${{ inputs.snapcraft-channel }}
+      sudo snap install snapcraft --classic --channel ${SNAPCRAFT_CHANNEL}
 
   - id: get-name
     shell: bash
     if: ${{ ! inputs.name }}
     run: |
-      echo "::set-output name=name::${GITHUB_REPOSITORY#*/}"
+      echo "name=${GITHUB_REPOSITORY#*/}" >> "$GITHUB_OUTPUT"
 
   - shell: bash
     env:
       SNAPCRAFT_STORE_CREDENTIALS: ${{ inputs.snapcraft-token }}
+      CHANNEL: ${{ inputs.channel }}
+      SNAP_NAME: ${{ inputs.name || steps.get-name.outputs.name }}
     run: |
-      snapcraft close "$( echo ${{ inputs.name || steps.get-name.outputs.name }} | tr 'A-Z' 'a-z' )" "${{ inputs.channel }}"
+      snapcraft close "$( echo "${SNAP_NAME}" | tr 'A-Z' 'a-z' )" "${CHANNEL}"

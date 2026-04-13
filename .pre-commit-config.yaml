@@ -8,7 +8,7 @@ repos:
 
 # static analysis tool for GitHub Actions
 - repo: https://github.com/zizmorcore/zizmor-pre-commit
-  rev: ea2eb407b4cbce87cf0d502f36578950494f5ac9  # frozen: v1.23.1
+  rev: 0703f40666c15722d5402120b1bbd61bc3503772  # frozen: v1.24.0
   hooks:
   - id: zizmor
     args:

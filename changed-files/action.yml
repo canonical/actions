@@ -22,9 +22,12 @@ runs:
     - name: Get changed files
       id: changed-files
       shell: bash
+      env:
+        BASE_REF: ${{ inputs.base-ref }}
+        HEAD_REF: ${{ inputs.head-ref }}
       run: |
-        git fetch origin ${{ inputs.base-ref }}:refs/heads/changed_base --depth 1
-        git fetch origin ${{ inputs.head-ref }}:refs/heads/changed_head --depth 1
+        git fetch origin --depth 1 -- "${BASE_REF}:refs/heads/changed_base"
+        git fetch origin --depth 1 -- "${HEAD_REF}:refs/heads/changed_head"
 
         cat <<END_OUTPUT >> $GITHUB_OUTPUT
         all_changed_files<<EOF

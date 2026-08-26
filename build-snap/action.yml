@@ -169,6 +169,7 @@ runs:
       /snap/bin/review-tools.snap-review "${REVIEW_OPTS[@]}" ${SNAP_REVIEW_OPTS} "${SNAP_PATH}"
 
   - name: Publish the built snap, if requested
+    id: publish-snap
     shell: bash
     env:
       SNAPCRAFT_STORE_CREDENTIALS: ${{ inputs.snapcraft-token }}
@@ -178,3 +179,11 @@ runs:
     run: |
       [ "${PUBLISH}" == "true" ] || exit 0
       snapcraft upload "${SNAP_PATH}" --release "${PUBLISH_CHANNEL}"
+
+  - name: Upload the built snap as an artifact, if publishing failed
+    if: failure() && steps.publish-snap.outcome == 'failure'
+    uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+    with:
+      retention-days: 10
+      name: ${{ steps.build-snap.outputs.snap-name }}
+      path: ${{ steps.build-snap.outputs.snap-path }}
